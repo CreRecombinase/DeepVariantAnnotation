@@ -1,0 +1,107 @@
+---
+title: "Computing SVD using Dask"
+author: "Nicholas Knoblauch"
+date: 2017-03-28
+output: html_document
+---
+
+<!-- The file analysis/chunks.R contains chunks that define default settings
+shared across the workflowr files. -->
+```{r read-chunk, include=FALSE, cache=FALSE}
+knitr::read_chunk("chunks.R")
+```
+
+<!-- Update knitr chunk options -->
+```{r knitr-opts-chunk, include=FALSE}
+```
+
+<!-- Insert the date the file was last updated -->
+```{r last-updated, echo=FALSE, results='asis'}
+```
+
+<!-- Insert the code version (Git commit SHA1) if Git repository exists and R
+ package git2r is installed -->
+```{r code-version, echo=FALSE, results='asis'}
+```
+
+
+## Libraries
+
+```{python, eval=FALSE}
+import itertools
+import h5py
+from sklearn import preprocessing
+from itertools import groupby
+import numpy as np
+from dask.delayed import delayed
+
+```
+
+## Importing data
+
+```{python, eval=FALSE}
+trainf = h5py.File('./deepsea_train/train.mat','r') # HDF5 file
+traindata = trainf['/traindata']
+#traindata = trainf['/trainxdata']
+```
+
+One of the quirks of `dask`, is that it's easier to work with if the data is  in individual files, or at least individual `HDF5` datasets, so that's what I've done here.
+
+```{python,eval=FALSE}
+for i in range(len(colchunks)):
+    chunkfile = chunkfiles[i]
+    print(chunkfile)
+    chunkfs = h5py.File(chunkfile,'w')
+    tdata = traindata[:,colchunks[i]]
+    tds = chunkfs.create_dataset("chunk",(rows,len(colchunks[i])),dtype="uint8",data=tdata)
+    chunkfs.close()
+```
+
+What's going on here is we're loading our data back, but using what's known as "delayed evaluation". The basic idea of delayed evaluation is that you give a long series of instructions to the program, the program constructs a computation graph from these instructions, but doesn't compute any of it until it's "asked" to. 
+
+```{python,eval=FALSE}
+dsets = [h5py.File(fn)['/chunk'] for fn in chunkfiles]
+arrays = [da.from_array(dset, chunks=(919, 1000)) for dset in dsets]
+```
+
+Our matrix $X$ has the mean subtracted from each column
+
+
+```{python,eval=FALSE}
+x = da.concatenate(arrays,axis=1)
+mx=da.mean(x,axis=1)
+x=x-mx[:,None]
+```
+
+This is where we perform the compressed SVD.  Basically instead of performing a complete SVD,( which would require the construction of a matrix much larger than memory), we only compute the first 50 Singular values.  To further improve performance, we're using a randomized algorithm that is approximating the SVD rather than computing it exactly.
+
+```{python,eval=FALSE}
+u,s,v = da.linalg.svd_compressed(x,50,n_power_iter=4)
+```
+
+Here's the line where we actually "ask" dask to compute everything.
+
+
+```{python,eval=FALSE}
+cu,cs,cv=da.compute(u,s,v,num_workers=6)
+```
+
+The matrices are pretty big, so we store them in HDF5
+
+```{python,eval=FALSE}
+cudf = h5py.File('./train_svd_50_3.h5','w')
+cudf["U"]=cu
+cudf["D"]=cs
+cudf["V"]=cv
+cudf.close()
+```
+
+
+
+<!-- Add your analysis here -->
+
+## Session information
+
+<!-- Insert the session information into the document -->
+```{r session-info}
+```
