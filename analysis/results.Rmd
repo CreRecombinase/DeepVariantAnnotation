@@ -7,3 +7,4 @@ output: html_document
 * [Computing SVD using Dask](python_compute_SVD.html)
 * [Computing PCA from SVD](SVD_PCA.html)
 * [SVD of DeepSea response](SVD_plot.html)
+* [DeepSEA data layout](celltype_specificity.html)
