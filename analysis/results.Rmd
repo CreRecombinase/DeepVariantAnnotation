@@ -1,0 +1,8 @@
+---
+title: Results
+output: html_document
+---
+
+
+* [Computing PCA from SVD](SVD_PCA.html)
+* [SVD of DeepSea response](SVD_plot.html)

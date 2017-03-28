@@ -1,0 +1,102 @@
+---
+title: "Computing PCA from SVD"
+author: "Nicholas Knoblauch"
+date: 2017-03-28
+output: html_document
+---
+
+<!-- The file analysis/chunks.R contains chunks that define default settings
+shared across the workflowr files. -->
+```{r read-chunk, include=FALSE, cache=FALSE}
+knitr::read_chunk("chunks.R")
+```
+
+<!-- Update knitr chunk options -->
+```{r knitr-opts-chunk, include=FALSE}
+```
+
+<!-- Insert the date the file was last updated -->
+```{r last-updated, echo=FALSE, results='asis'}
+```
+
+<!-- Insert the code version (Git commit SHA1) if Git repository exists and R
+ package git2r is installed -->
+```{r code-version, echo=FALSE, results='asis'}
+```
+
+```{r}
+library(readr)
+library(h5)
+library(dplyr)
+```
+
+
+To compute the PCA of the response matrix, we first scaled the columns of the matrix (see IPython notebook) and then computed singular values.  As a refresher, remember that for a matrix $X$ (for which the mean of each column is $0$), the covariance matrix $C$ is
+$$C= X^{T}X/(n-1)$$ 
+
+The eigenvalue decomposition of the covariance matrix C is gives us the principle components:
+
+$$C=VLV^{T}$$
+
+Remember that for any matrix $X$, the Singular Value Decomposition of that matrix $X$  is 
+
+$$X = USV^{T}$$
+
+It's easy to show that
+$$C=VSU^{T}USV^{T}/(n-1)= V\frac{S^2}{n-1}V^{T}$$ 
+
+This means that $US$ are the principle components of $X$
+
+
+We'll first pull the features from the DeepSEA website
+```{r}
+feature_url <- "http://deepsea.princeton.edu/media/help/features.txt"
+features <- read_delim(feature_url,delim="\t",col_names = c("Source",
+                                                            "CellType",
+                                                            "DataType",
+                                                            "Treatment",
+                                                            "AUC"),skip = 1)
+```
+
+Now we'll load the svd we computed in `dask`
+
+```{r}
+
+train_svdf <- "/media/nwknoblauch/Data/DeepSEA/train_svd_50_3.h5"
+
+tsvdf <- h5file(train_svdf,mode='r')
+
+tu <- tsvdf["U"][]
+td <- tsvdf["D"][]
+tv <- tsvdf["V"][]
+s_tu <- tu*td
+```
+
+
+
+Save the results
+
+```{r}
+tu_df <- as_data_frame(s_tu)
+colnames(tu_df) <- paste0("PC_",1:50)
+
+d_df <- data_frame(evals=td^2/(ncol(tv)-1),ind=1:length(td))
+#saveRDS(d_df,"../data/DeepSea_evals_df.RDS")
+
+features <- mutate(features,AUC=as.numeric(AUC)) %>% filter(!is.na(AUC))
+ntu_df <- bind_cols(features,slice(tu_df,-1))
+#saveRDS(ntu_df,"../data/DeepSeaPCA_df.RDS")
+```
+
+
+
+
+
+
+
+
+## Session information
+
+<!-- Insert the session information into the document -->
+```{r session-info}
+```

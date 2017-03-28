@@ -1,0 +1,68 @@
+---
+title: "SVD of DeepSea response"
+author: "Nicholas Knoblauch"
+date: 2017-03-28
+output: html_document
+---
+
+<!-- The file analysis/chunks.R contains chunks that define default settings
+shared across the workflowr files. -->
+```{r read-chunk, include=FALSE, cache=FALSE}
+knitr::read_chunk("chunks.R")
+```
+
+<!-- Update knitr chunk options -->
+```{r knitr-opts-chunk, include=FALSE}
+```
+
+<!-- Insert the date the file was last updated -->
+```{r last-updated, echo=FALSE, results='asis'}
+```
+
+<!-- Insert the code version (Git commit SHA1) if Git repository exists and R
+ package git2r is installed -->
+```{r code-version, echo=FALSE, results='asis'}
+```
+
+
+
+
+<!-- Add your analysis here -->
+
+This notebook shows the SVD of the DeepSea response matrix.
+
+```{r}
+library(ggplot2)
+```
+
+
+The mean was subtracted from each column before singular values were computed.
+
+
+## Loading data
+```{r}
+evals_df <- readRDS("../data/DeepSea_evals_df.RDS")
+deepsea_pca_df <- readRDS("../data/DeepSeaPCA_df.RDS")
+```
+
+
+
+```{r}
+ggplot(evals_df,aes(x=ind,y=evals/sum(evals)))+geom_point()+ggtitle("Scree plot")+xlab("Rank")+ylab("Eigenvalues")
+```
+The Scree plot shows us that the first two eigenvalues (PC's) contain a significant amount of the variance, but that there's no sharp dropoff.
+
+
+
+
+```{r}
+ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=Source))+geom_point()+ggtitle("PC 1  1 vs PC 2")
+```
+
+
+
+## Session information
+
+<!-- Insert the session information into the document -->
+```{r session-info}
+```
