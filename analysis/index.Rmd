@@ -7,5 +7,3 @@ output:
 
 [Results can be found here](results.html)
 
-
-[python for generating SVD can be found here](computeSVD.html)
