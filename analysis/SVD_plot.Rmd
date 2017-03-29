@@ -55,31 +55,32 @@ ggplot(evals_df,aes(x=ind,y=evals/sum(evals)))+geom_point()+ggtitle("Scree plot"
 The Scree plot shows us that the first two eigenvalues (PC's) contain a significant amount of the variance, but that there's no sharp dropoff.
 
 
-
+## PCA plots
 
 ```{r}
 ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=Source))+geom_point()+ggtitle("PC 1  1 vs PC 2")
 ```
 
-Plot by annotation types (TF Binding/DNase/Histone Mark)
+Plot by annotation types (TF Binding/DNase/Histone Mark). See `to_annotation_type` function [here](#code)
 ```{r}
 library(stringr)
-histone.ind <- sapply(deepsea_pca_df$DataType, function(x){
-  temp <- str_extract_all(pattern = '^H[0-9]', x)[[1]]
-  if(length(temp) != 0){
-    return(TRUE)
-  }else{
-    return(FALSE)
-  }
-})
-dnase.ind <- deepsea_pca_df$DataType == 'DNase'
-deepsea_pca_df$AnnotationType <- rep('TF', nrow(deepsea_pca_df))
-deepsea_pca_df$AnnotationType[histone.ind] <- 'Histone'
-deepsea_pca_df$AnnotationType[dnase.ind] <- 'DNase'
+source('../../cell_type/yanyu_lib.R')
+aucs_danq <- read.table('../data/aucs.txt', sep = '\t', header = T)
+aucs_danq$DeepSEA.ROC.AUC <- as.numeric(as.character(aucs_danq$DeepSEA.ROC.AUC))
+aucs_danq <- aucs_danq[!is.na(aucs_danq$DeepSEA.ROC.AUC),]
+deepsea_pca_df$AnnotationType <- to_annotation_type(aucs_danq$TF.DNase.HistoneMark)
+deepsea_pca_df$ROC.AUC <- aucs_danq$DeepSEA.ROC.AUC
+deepsea_pca_df$PR.AUC <- as.numeric(as.character(aucs_danq$DeepSEA.PR.AUC))
 ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=AnnotationType))+geom_point()+ggtitle("PC 1  1 vs PC 2")
 ```
 
+PC1 and PC2 separate Histone marks, TF binding, and DNase.
 
+## Code {#code}
+
+```{r}
+to_annotation_type
+```
 
 ## Session information
 
