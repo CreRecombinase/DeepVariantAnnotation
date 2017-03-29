@@ -1,0 +1,60 @@
+---
+title: "Distribution of DeepSEA's AUCs"
+author: "Yanyu Liang"
+date: 2017-03-29
+output: html_document
+---
+
+<style>
+pre code, pre, code {
+        white-space: pre !important;
+        overflow-x: scroll !important;
+        word-break: keep-all !important;
+        word-wrap: initial !important;
+}
+</style>
+        
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width=2000)
+```
+
+<!-- The file analysis/chunks.R contains chunks that define default settings
+shared across the workflowr files. -->
+```{r read-chunk, include=FALSE, cache=FALSE}
+knitr::read_chunk("chunks.R")
+```
+
+<!-- Update knitr chunk options -->
+```{r knitr-opts-chunk, include=FALSE}
+```
+
+<!-- Insert the date the file was last updated -->
+```{r last-updated, echo=FALSE, results='asis'}
+```
+
+<!-- Insert the code version (Git commit SHA1) if Git repository exists and R
+ package git2r is installed -->
+```{r code-version, echo=FALSE, results='asis'}
+```
+
+<!-- Add your analysis here -->
+
+```{r}
+source('../../cell_type/yanyu_lib.R')
+aucs_danq <- read.table('../data/aucs.txt', sep = '\t', header = T)
+aucs_danq <- as_num(aucs_danq)
+aucs_danq <- aucs_danq[!is.na(aucs_danq$DeepSEA.ROC.AUC),]
+aucs_danq$AnnotationType <- to_annotation_type(aucs_danq$TF.DNase.HistoneMark)
+p1<-ggplot(aucs_danq) + geom_histogram(aes(x = DeepSEA.ROC.AUC, fill = AnnotationType), bins=50) + facet_grid(AnnotationType~., scales = 'free_y') + theme(strip.background = element_blank(),
+ strip.text.y = element_blank(),legend.position="none")
+p2<-ggplot(aucs_danq) + geom_histogram(aes(x = DeepSEA.PR.AUC, fill = AnnotationType), bins=30) + facet_grid(.~AnnotationType, scales = 'free_y') + coord_flip() + theme(strip.background = element_blank(), strip.text.x = element_blank(), legend.position="none")
+p3<-ggplot(aucs_danq) + geom_point(aes(x = DeepSEA.ROC.AUC, y = DeepSEA.PR.AUC, color = AnnotationType)) + theme(legend.justification=c(0,1), legend.position=c(0,1))
+multiplot(p3, p1, p2, cols=2)
+```
+
+## Session information
+
+<!-- Insert the session information into the document -->
+```{r session-info}
+```
