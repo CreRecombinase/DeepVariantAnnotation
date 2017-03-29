@@ -208,6 +208,47 @@ data[data_none_dnase[order(data_none_dnase$DeepSEA.PR.AUC)[1:5],]$row_num,]
 ```
 
 
+## AUC vs number of replicates
+
+Here we take a look at the effect of the duplicated data sets (only 'None' treatment is considered; namely one cell type - annotation type pair has more than one data sets).
+
+```{r}
+data_none <- as_num(data_none)
+data_none <- data_none[!is.na(data_none$DeepSEA.ROC.AUC), ]
+data_none_replicated <- unsplit(lapply(split(data_none, data_none[c('Cell.Type', 'TF.DNase.HistoneMark')], drop = T), function(x){
+  # print(x)
+  x$replicate_number <- rep(nrow(x), nrow(x))
+  return(x)
+}), data_none[c('Cell.Type', 'TF.DNase.HistoneMark')], drop = T)
+ggplot(data_none_replicated, aes(x = replicate_number)) + geom_point(aes(y = DeepSEA.ROC.AUC, color = 'ROC AUC')) + geom_point(aes(y = DeepSEA.PR.AUC, color = 'PR AUC')) + ylab('AUC') + ggtitle('Performance vs Number of replicates')
+```
+
+## Distance within replicates and between replicates
+
+Here the "between group distance" is defined as the mean of all cross group pairs (here group is referred to replicates; within group distance follow the same idea excluding distance to itself). For example, for a cell type - annotation type pair with only one data sets (here replicate_number is 1), the within distance is 0, and between distance is $\frac{1}{n - 1} \sum_{i \neq j} dist(x_j, x_i)$, where $x_j$ is itself. In general, for a cell type - annotation type pair with replicate set $G$, $within = \frac{1}{|G|} \sum_{i, j \in G, i \neq j} dist(x_i, x_j)$ and $between = \frac{1}{n - |G|} \sum_{i \in G, j \notin G} dist(x_i, x_j)$.
+
+```{r}
+data_none_replicated_distance <- unsplit(lapply(split(data_none_replicated, data_none_replicated[c('Cell.Type', 'TF.DNase.HistoneMark')], drop = T), function(x){
+  # print(x)
+  within.temp <- melted_distance[melted_distance$Var1 %in% x$row_num & melted_distance$Var2 %in% x$row_num, ]$value
+  # print(within.temp)
+  within <- sum(within.temp) / (length(within.temp) - 2)
+  between.temp <- melted_distance[melted_distance$Var1 %in% x$row_num & !melted_distance$Var2 %in% x$row_num, ]$value
+  between <- mean(between.temp)
+  x$dist.between <- rep(between, nrow(x))
+  x$dist.within <- rep(within, nrow(x))
+  return(x)
+}), data_none[c('Cell.Type', 'TF.DNase.HistoneMark')], drop = T)
+library(stringr)
+data_none_replicated_distance$AnnotationType <- to_annotation_type(data_none_replicated_distance$TF.DNase.HistoneMark)
+p1 <- ggplot(data_none_replicated_distance) + geom_point(aes(x = dist.within, y = dist.between, color = DeepSEA.ROC.AUC)) + geom_abline(slope = 1, intercept = 0) + ggtitle('Between group distance vs Within group distance')
+p2 <- ggplot(data_none_replicated_distance) + geom_point(aes(x = dist.within, y = dist.between, color = DeepSEA.PR.AUC)) + geom_abline(slope = 1, intercept = 0)
+multiplot(p1, p2)
+ggplot(data_none_replicated_distance) + geom_point(aes(x = replicate_number, y = dist.between)) + ggtitle('Between group distance vs Number of replicates')
+```
+
+From the plot we can see, DeepSEA benefits from similarity between data sets. Additionally, the data sets with more replicates tend to have a smaller between groups distance. This may explain why the one with more replicates have higher accuracy.
+
 ## Codes 
 
 ### `yanyu_lib.R` {#code_r_lib}
