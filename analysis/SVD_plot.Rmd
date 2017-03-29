@@ -1,6 +1,8 @@
 ---
 title: "SVD of DeepSea response"
-author: "Nicholas Knoblauch"
+author: 
+- "Nicholas Knoblauch"
+- Yanyu Liang
 date: 2017-03-28
 output: html_document
 ---
@@ -57,6 +59,24 @@ The Scree plot shows us that the first two eigenvalues (PC's) contain a signific
 
 ```{r}
 ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=Source))+geom_point()+ggtitle("PC 1  1 vs PC 2")
+```
+
+Plot by annotation types (TF Binding/DNase/Histone Mark)
+```{r}
+library(stringr)
+histone.ind <- sapply(deepsea_pca_df$DataType, function(x){
+  temp <- str_extract_all(pattern = '^H[0-9]', x)[[1]]
+  if(length(temp) != 0){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+})
+dnase.ind <- deepsea_pca_df$DataType == 'DNase'
+deepsea_pca_df$AnnotationType <- rep('TF', nrow(deepsea_pca_df))
+deepsea_pca_df$AnnotationType[histone.ind] <- 'Histone'
+deepsea_pca_df$AnnotationType[dnase.ind] <- 'DNase'
+ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=AnnotationType))+geom_point()+ggtitle("PC 1  1 vs PC 2")
 ```
 
 
