@@ -65,16 +65,30 @@ Plot by annotation types (TF Binding/DNase/Histone Mark). See `to_annotation_typ
 ```{r}
 library(stringr)
 source('../../cell_type/yanyu_lib.R')
-aucs_danq <- read.table('../data/aucs.txt', sep = '\t', header = T)
+aucs_danq <- read.table('../data/aucs.with.tissue.txt', sep = '\t', header = T, fill = T)
 aucs_danq$DeepSEA.ROC.AUC <- as.numeric(as.character(aucs_danq$DeepSEA.ROC.AUC))
 aucs_danq <- aucs_danq[!is.na(aucs_danq$DeepSEA.ROC.AUC),]
 deepsea_pca_df$AnnotationType <- to_annotation_type(aucs_danq$TF.DNase.HistoneMark)
 deepsea_pca_df$ROC.AUC <- aucs_danq$DeepSEA.ROC.AUC
 deepsea_pca_df$PR.AUC <- as.numeric(as.character(aucs_danq$DeepSEA.PR.AUC))
+cleaned_tissue <- as.character(aucs_danq$Tissue)
+cleaned_tissue[!cleaned_tissue %in% names(table(cleaned_tissue))[table(cleaned_tissue) > 30]] <- 'Minor'
+deepsea_pca_df$Tissue <- cleaned_tissue
+cleaned_karyotype <- as.character(aucs_danq$Karyotype)
+cleaned_karyotype[cleaned_karyotype == ''] <- 'unknown'
+deepsea_pca_df$Karyotype <- cleaned_karyotype
 ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=AnnotationType))+geom_point()+ggtitle("PC 1  1 vs PC 2")
 ```
 
 PC1 and PC2 separate Histone marks, TF binding, and DNase.
+
+```{r}
+ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=Tissue))+geom_point()+ggtitle("PC 1  1 vs PC 2")
+```
+
+```{r}
+ggplot(deepsea_pca_df,aes(x=PC_1,y=PC_2,col=Karyotype))+geom_point()+ggtitle("PC 1  1 vs PC 2")
+```
 
 ## Code {#code}
 
